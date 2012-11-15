@@ -21,7 +21,7 @@ Gem::Specification.new "janky", Janky::VERSION do |s|
   # development
   s.add_development_dependency "shotgun", "~>0.9"
   s.add_development_dependency "thin", "~>1.2"
-  s.add_development_dependency "mysql2", "~>0.3.0"
+  s.add_development_dependency "pg"
 
   # test
   s.add_development_dependency "database_cleaner", "~>0.6"
