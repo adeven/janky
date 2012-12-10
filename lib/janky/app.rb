@@ -1,3 +1,4 @@
+# encoding: UTF-8
 module Janky
   class App < Sinatra::Base
     register Mustache::Sinatra
