@@ -81,7 +81,7 @@ module Janky
     end
 
     # Get the status of a repository's branch.
-    get %r{\/([-_\.0-9a-zA-Z]+)\/([-_\.a-zA-z0-9\/]+)} do |repo_name, branch_name|
+    get %r{\/([-_\.0-9a-zA-Z]+)\/([-_\+\.a-zA-z0-9\/]+)} do |repo_name, branch_name|
       limit = params["limit"]
 
       repo   = find_repo(repo_name)
@@ -114,7 +114,14 @@ ci setup github/janky [name]
 ci toggle janky
 ci rooms
 ci set room janky development
+ci status
+ci status janky
+ci status janky/master
 EOS
+    end
+
+    get "/boomtown" do
+      fail "BOOM (janky)"
     end
   end
 end
