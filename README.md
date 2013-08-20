@@ -18,7 +18,7 @@ This is Janky, a continuous integration server built on top of
 [Jenkins]: http://jenkins-ci.org
 [w]: http://developer.github.com/v3/repos/hooks/
 
-Hubot Usage
+Hubot usage
 -----------
 
 Start by setting up a new Jenkins job and GitHub web hook for a
@@ -90,7 +90,7 @@ Grab all the necessary files from [the gist][gist]:
 
     $ git clone git://gist.github.com/1497335 janky
 
-Then push up it to a new Heroku app:
+Then push it up to a new Heroku app:
 
     $ cd janky
     $ heroku create --stack cedar
@@ -107,7 +107,20 @@ After configuring the app (see below), create the database:
 
 [gist]: https://gist.github.com/1497335
 
-### Configuring
+Upgrading
+---------
+
+We **strongly recommend** backing up your Janky database before upgrading.
+
+The general process is to then upgrade the gem, and then run migrate.  Here is how
+you do that on a local box you have access to (this process will differ for Heroku):
+
+    cd [PATH-TO-JANKY]
+    gem update janky
+    rake db:migrate
+
+Configuring
+-----------
 
 Janky is configured using environment variables. Use the `heroku config`
 command:
@@ -139,7 +152,7 @@ Optional database settings:
 * `JANKY_DATABASE_SOCKET`: Path to the database socket. Example:
   `/var/run/mysql5/mysqld.sock`.
 
-#### GitHub Enterprise
+### GitHub Enterprise
 
 Using Janky with [GitHub Enterprise][ghe] requires one extra setting:
 
@@ -153,13 +166,15 @@ Using Janky with [GitHub Enterprise][ghe] requires one extra setting:
 https://github.com/blog/1227-commit-status-api
 
 To update pull requests with the build status generate an OAuth token
-like so:
+via the GitHub API:
 
-  curl -u username:password -d '{ "scopes": [ "repo:status" ], "note": "janky" }' https://api.github.com/authorizations
+    curl -u username:password \
+      -d '{ "scopes": [ "repo:status" ], "note": "janky" }' \
+      https://api.github.com/authorizations
 
 then set `JANKY_GITHUB_STATUS_TOKEN`.
 
-### Chat Notification
+### Chat notifications
 
 #### Campfire
 Janky notifies [Campfire][] chat rooms by default. Required settings:
@@ -179,16 +194,18 @@ Required settings:
   admin token, not a notification token.)
 * `JANKY_CHAT_HIPCHAT_FROM`: name that messages will appear be sent from.
   Defaults to `CI`.
-* `JANKY_HUBOT_USER` should be XMPP/Jabber username in format xxxxx_xxxxxx rather than email
+* `JANKY_HUBOT_USER` should be XMPP/Jabber username in format xxxxx_xxxxxx
+  rather than email
+* `JANKY_CHAT_DEFAULT_ROOM` should be the name of the room instead of the
+  XMPP format, for example: `Engineers` instead of xxxx_xxxxxx.
 
 Installation:
 
-* Add `require "janky/chat_service/hipchat"` to the `config/environment.rb` file
-  **before** the `Janky.setup(ENV)` line.
+* Add `require "janky/chat_service/hipchat"` to the `config/environment.rb`
+  file **before** the `Janky.setup(ENV)` line.
 * `echo 'gem "hipchat", "~>0.4"' >> Gemfile`
 * `bundle`
 * `git commit -am "install hipchat"`
-
 
 ### Authentication
 
@@ -202,6 +219,7 @@ a few extra settings:
 * `JANKY_AUTH_CLIENT_ID`: The client ID of the OAuth application.
 * `JANKY_AUTH_CLIENT_SECRET`: The client secret of the OAuth application.
 * `JANKY_AUTH_ORGANIZATION`: The organization name. Example: "github".
+* `JANKY_AUTH_TEAM_ID`: An optional team ID to give auth to. Example: "1234".
 
 ### Hubot
 
@@ -210,7 +228,7 @@ then set the `HUBOT_JANKY_URL` environment variable. Example:
 `http://user:password@janky.example.com/_hubot/`, with user and password
 replaced by `JANKY_HUBOT_USER` and `JANKY_HUBOT_PASSWORD` respectively.
 
-### Custom Build Configuration
+### Custom build configuration
 
 The default build command should suffice for most Ruby applications:
 
@@ -264,10 +282,12 @@ Contributing
 ------------
 
 Fork the [Janky repository on GitHub](https://github.com/github/janky) and
-send a Pull Request.
+send a Pull Request.  Note that any changes to behavior without tests will
+be rejected.  If you are adding significant new features, please add both
+tests and documentation.
 
 Copying
 -------
 
-Copyright © 2011-2012, GitHub, Inc. See the `COPYING` file for license
+Copyright © 2011-2013, GitHub, Inc. See the `COPYING` file for license
 rights and limitations (MIT).
