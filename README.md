@@ -31,6 +31,10 @@ anything unless it needs to. It takes an optional name argument:
 
     hubot ci setup github/janky janky-ruby1.9.2
 
+It also takes an optional template name argument:
+
+    hubot ci setup github/janky janky-ruby1.9.2 ruby-build
+
 All branches are built automatically on push. Disable auto build with:
 
     hubot ci toggle janky
@@ -79,6 +83,9 @@ Janky requires access to a Jenkins server. Version **1.427** is
 recommended. Refer to the Jenkins [documentation][doc] for installation
 instructions and install the [Notification Plugin][np] version 1.4.
 
+Remember to set the Jenkins URL in `http://your-jenkins-server.com/configure`.
+Janky will still trigger builds but will not update the build status without this set.
+
 [doc]: https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins
 [np]: https://wiki.jenkins-ci.org/display/JENKINS/Notification+Plugin
 
@@ -103,7 +110,7 @@ After configuring the app (see below), create the database:
 
     $ heroku run rake db:migrate
 
-**NOTE:** Ruby version 1.9.3 is required to run Janky.
+**NOTE:** Ruby version 2.0.0+ is required to run Janky.
 
 [gist]: https://gist.github.com/1497335
 
@@ -134,6 +141,7 @@ Required settings:
 * `JANKY_BUILDER_DEFAULT`: The Jenkins server URL **with** a trailing slash.
    Example: `http://jenkins.example.com/`. For basic auth, include the
    credentials in the URL: `http://user:pass@jenkins.example.com/`.
+   Using GitHub OAuth with Jenkins is not supported by Janky.
 * `JANKY_CONFIG_DIR`: Directory where build config templates are stored.
   Typically set to `/app/config` on Heroku.
 * `JANKY_HUBOT_USER`: Login used to protect the Hubot API.
@@ -173,6 +181,10 @@ via the GitHub API:
       https://api.github.com/authorizations
 
 then set `JANKY_GITHUB_STATUS_TOKEN`.
+
+`username` and `password` in the above example should be the same as the
+values provided for `JANKY_GITHUB_USER` and `JANKY_GITHUB_PASSWORD`
+respectively.
 
 ### Chat notifications
 
@@ -239,8 +251,10 @@ For more control you can add a `script/cibuild` at the root of your
 repository for Jenkins to execute instead.
 
 For total control, whole Jenkins' `config.xml` files can be associated
-with Janky builds. Given a build called `windows`, Janky will try
-`config/jobs/windows.xml.erb` before falling back to the default
+with Janky builds. Given a build called `windows` and a template name
+of `psake`, Janky will try `config/jobs/psake.xml.erb` to use a template,
+`config/jobs/windows.xml.erb` to try the job name if the template does
+not exit,  before finally falling back to the default
 configuration, `config/jobs/default.xml.erb`. After updating or adding
 a custom config, run `hubot ci setup` again to update the Jenkins
 server.

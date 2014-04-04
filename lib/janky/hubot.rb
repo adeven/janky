@@ -12,11 +12,12 @@ module Janky
     post "/setup" do
       nwo  = params["nwo"]
       name = params["name"]
-      repo = Repository.setup(nwo, name)
+      tmpl = params["template"]
+      repo = Repository.setup(nwo, name, tmpl)
 
       if repo
         url  = "#{settings.base_url}#{repo.name}"
-        [201, "Setup #{repo.name} at #{repo.uri} | #{url}"]
+        [201, "Setup #{repo.name} at #{repo.uri} with #{repo.job_config_path.basename} | #{url}"]
       else
         [400, "Couldn't access #{nwo}. Check the permissions."]
       end
@@ -37,6 +38,7 @@ module Janky
       room_id = (params["room_id"] && Integer(params["room_id"]) rescue nil)
       user    = params["user"]
       build   = branch.head_build_for(room_id, user)
+      build ||= repo.build_sha(branch_name, user, room_id)
 
       if build
         build.run
@@ -80,6 +82,48 @@ module Janky
       repos.join("\n")
     end
 
+    # Get the lasts builds
+    get "/builds" do
+      limit = params["limit"]
+      building = params["building"]
+
+      builds = Build.unscoped
+      if building.blank? || building == 'false'
+        builds = builds.completed
+      else
+        builds = builds.building
+      end
+      builds = builds.limit(limit) unless limit.blank?
+
+      builds.map! do |build|
+        build_to_hash(build)
+      end
+
+      builds.to_json
+    end
+
+    # Get information about how a project is configured
+    get %r{\/show\/([-_\.0-9a-zA-Z]+)} do |repo_name|
+      repo   = find_repo(repo_name)
+      res = {
+        :name => repo.name,
+        :configured_job_template => repo.job_template,
+        :used_job_template => repo.job_config_path.basename.to_s,
+        :repo => repo.uri,
+        :room_id => repo.room_id,
+        :enabled => repo.enabled,
+        :hook_url => repo.hook_url
+      }
+      pp res
+      res.to_json
+    end
+
+    delete %r{\/([-_\.0-9a-zA-Z]+)} do |repo_name|
+      repo   = find_repo(repo_name)
+      repo.destroy
+      "Janky project #{repo_name} deleted"
+    end
+
     # Get the status of a repository's branch.
     get %r{\/([-_\.0-9a-zA-Z]+)\/([-_\+\.a-zA-z0-9\/]+)} do |repo_name, branch_name|
       limit = params["limit"]
@@ -87,18 +131,7 @@ module Janky
       repo   = find_repo(repo_name)
       branch = repo.branch_for(branch_name)
       builds = branch.queued_builds.limit(limit).map do |build|
-        { :sha1     => build.sha1,
-          :repo     => build.repo_name,
-          :branch   => build.branch_name,
-          :user     => build.user,
-          :green    => build.green?,
-          :building => build.building?,
-          :queued   => build.queued?,
-          :pending  => build.pending?,
-          :number   => build.number,
-          :status   => (build.green? ? "was successful" : "failed"),
-          :compare  => build.compare,
-          :duration => build.duration }
+        build_to_hash(build)
       end
 
       builds.to_json
@@ -111,17 +144,39 @@ module Janky
 ci build janky
 ci build janky/fix-everything
 ci setup github/janky [name]
+ci setup github/janky name template
 ci toggle janky
 ci rooms
 ci set room janky development
 ci status
 ci status janky
 ci status janky/master
+ci builds limit [building]
+ci show janky
+ci delete janky
 EOS
     end
 
     get "/boomtown" do
       fail "BOOM (janky)"
+    end
+
+    private
+
+    def build_to_hash(build)
+      { :sha1     => build.sha1,
+        :repo     => build.repo_name,
+        :branch   => build.branch_name,
+        :user     => build.user,
+        :green    => build.green?,
+        :building => build.building?,
+        :queued   => build.queued?,
+        :pending  => build.pending?,
+        :number   => build.number,
+        :status   => (build.green? ? "was successful" : "failed"),
+        :compare  => build.compare,
+        :duration => build.duration,
+        :web_url  => build.web_url }
     end
   end
 end
