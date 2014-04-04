@@ -5,3 +5,4 @@ Gemfile.lock
 *.gem
 .rbenv-version
 /tmp/*
+.ruby-version
